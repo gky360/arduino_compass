@@ -1,58 +1,79 @@
 module SparkFunLSM303C
 open(Prelude, Time, Vector)
+include("\"Wire.h\"")
 include("\"SparkFunLSM303C.h\"")
 
-type accMag = { ptr : pointer; offset : vector<float;3>; scale : vector<float;3> }
+type accMag = { ptr : pointer; offset : vector<double;3>; scale : vector<double;3> }
 type accMagState = { timeState  : timerState ref;
-                     latchState : (vector<float;3>*vector<float;3>) ref }
+                     latchState : (vector<double;3>*vector<double;3>) ref }
 
-fun make(minX : float, minY : float, minZ : float,
-         maxX : float, maxY : float, maxZ : float) : accMag = (
-    let offset = Vector:make<float;3>([(minX + maxX)/-2.0, (minY + maxY)/-2.0, (minZ + maxZ)/-2.0]);
-    let scale = Vector:make<float;3>([2.0/(maxX - minX), 2.0/(maxY - minY), 2.0/(maxZ - minZ)]);
+fun make(minX : double, minY : double, minZ : double,
+         maxX : double, maxY : double, maxZ : double) : accMag = (
+    let offset = Vector:make<double;3>([(minX + maxX)/-2.0, (minY + maxY)/-2.0, (minZ + maxZ)/-2.0]);
+    let scale = Vector:make<double;3>([2.0/(maxX - minX), 2.0/(maxY - minY), 2.0/(maxZ - minZ)]);
     let p = null;
     #p.set((void*) new LSM303C());#;
     accMag { ptr = p; offset = offset; scale = scale }
 )
 
 fun state() : accMagState ref = (
-    let z = Vector:zero<float;3>();
+    let z = Vector:zero<double;3>();
     ref accMagState { timeState = Time:state();
                       latchState = ref (z,z) }
 )
 
 fun begin(am : accMag) : unit = (
     let p = am.ptr;
-    #((LSM303C*) p.get())->begin();#
+    #
+    Serial.begin(9600);
+    ((LSM303C*) p.get())->begin();
+    #
 )
 
-fun read(am : accMag) : (vector<float;3> * vector<float;3>) = (
+fun read(am : accMag) : (vector<double;3> * vector<double;3>) = (
     let p = am.ptr;
-    let mutable accX : float = 0.0;
-    let mutable accY : float = 0.0;
-    let mutable accZ : float = 0.0;
-    let mutable magX : float = 0.0;
-    let mutable magY : float = 0.0;
-    let mutable magZ : float = 0.0;
-    #auto ptr = (LSM303C*) p.get();
+    let mutable accX : double = 0.0;
+    let mutable accY : double = 0.0;
+    let mutable accZ : double = 0.0;
+    let mutable magX : double = 0.0;
+    let mutable magY : double = 0.0;
+    let mutable magZ : double = 0.0;
+    #
+    auto ptr = (LSM303C*) p.get();
     accX = ptr->readAccelX();
     accY = ptr->readAccelY();
     accZ = ptr->readAccelZ();
     magX = ptr->readMagX();
     magY = ptr->readMagY();
-    magZ = ptr->readMagZ();#;
-    (Vector:make<float;3>([accX, accY, accZ]),
-     Vector:multiply<float;3>(am.scale, Vector:add<float;3>(am.offset, Vector:make<float;3>([magX, magY, magZ]))))
+    magZ = ptr->readMagZ();
+    Serial.println("Accelerometer:");
+    Serial.print(" X = ");
+    Serial.println(accX, 4);
+    Serial.print(" Y = ");
+    Serial.println(accY, 4);
+    Serial.print(" Z = ");
+    Serial.println(accZ, 4);
+    Serial.println("Magnetometer:");
+    Serial.print(" X = ");
+    Serial.println(magX, 4);
+    Serial.print(" Y = ");
+    Serial.println(magY, 4);
+    Serial.print(" Z = ");
+    Serial.println(magZ, 4);
+    #;
+//    (Vector:make<double;3>([accX, accY, accZ]),
+//     Vector:multiply<double;3>(am.scale, Vector:add<double;3>(am.offset, Vector:make<double;3>([magX, magY, magZ]))))
+    (Vector:make<double;3>([accX, accY, accZ]), Vector:make<double;3>([magX, magY, magZ]))
 )
 
 fun getSignal(updateInterval : uint32,
               accMag         : accMag,
-              state          : accMagState ref) : sig<(vector<float;3>*vector<float;3>)> = (
+              state          : accMagState ref) : sig<(vector<double;3>*vector<double;3>)> = (
     let tickSig = Time:every(updateInterval, (!state).timeState);
     let accelComUpdateSig =
-        Signal:map<uint32, (vector<float;3>*vector<float;3>)>(
-            fn (t : uint32) (* : (vector<float;3>*vector<float;3>) *) -> read(accMag) end,
+        Signal:map<uint32, (vector<double;3>*vector<double;3>)>(
+            fn (t : uint32) (* : (vector<double;3>*vector<double;3>) *) -> read(accMag) end,
             tickSig);
-    Signal:latch<(vector<float;3>*vector<float;3>)>(accelComUpdateSig, (!state).latchState)
+    Signal:latch<(vector<double;3>*vector<double;3>)>(accelComUpdateSig, (!state).latchState)
 )
 

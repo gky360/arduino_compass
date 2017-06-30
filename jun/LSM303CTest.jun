@@ -1,0 +1,24 @@
+module LSM303CTest
+open(Prelude, Vector)
+
+let am = SparkFunLSM303C:make(
+        -1.0, -1.0, -1.0,
+        1.0, 1.0, 1.0)
+let amState = SparkFunLSM303C:state()
+
+fun getAccMag() : unit = (
+    let amSig = SparkFunLSM303C:getSignal(1000, am, amState);
+    ()
+)
+
+fun setup() = (
+    SparkFunLSM303C:begin(am)
+)
+
+fun main() = (
+    setup();
+    while true do
+        getAccMag()
+    end
+)
+
