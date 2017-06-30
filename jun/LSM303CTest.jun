@@ -8,6 +8,13 @@ let amState = SparkFunLSM303C:state()
 
 fun getAccMag() : unit = (
     let amSig = SparkFunLSM303C:getSignal(1000, am, amState);
+    let (accXYZ, magXYZ) = !(!amState).latchState;
+    let accX = Vector:get<double;3>(0, accXYZ);
+    let accY = Vector:get<double;3>(1, accXYZ);
+    let accZ = Vector:get<double;3>(2, accXYZ);
+    let magX = Vector:get<double;3>(0, magXYZ);
+    let magY = Vector:get<double;3>(1, magXYZ);
+    let magZ = Vector:get<double;3>(2, magXYZ);
     ()
 )
 
