@@ -46,7 +46,7 @@ fun read(am : accMag) : (vector<double;3> * vector<double;3>) = (
     magX = ptr->readMagX();
     magY = ptr->readMagY();
     magZ = ptr->readMagZ();
-    Serial.println("Accelerometer:");
+/*     Serial.println("Accelerometer:");
     Serial.print(" X = ");
     Serial.println(accX, 4);
     Serial.print(" Y = ");
@@ -60,7 +60,7 @@ fun read(am : accMag) : (vector<double;3> * vector<double;3>) = (
     Serial.println(magY, 4);
     Serial.print(" Z = ");
     Serial.println(magZ, 4);
-    #;
+  */   #;
 //    (Vector:make<double;3>([accX, accY, accZ]),
 //     Vector:multiply<double;3>(am.scale, Vector:add<double;3>(am.offset, Vector:make<double;3>([magX, magY, magZ]))))
     (Vector:make<double;3>([accX, accY, accZ]), Vector:make<double;3>([magX, magY, magZ]))

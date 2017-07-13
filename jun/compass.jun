@@ -1,0 +1,69 @@
+module Compass
+open(Prelude, Vector, Math)
+
+let am = SparkFunLSM303C:make(
+        -1.0, -1.0, -1.0,
+        1.0, 1.0, 1.0)
+let amState = SparkFunLSM303C:state()
+
+let ringPin = 9
+let ringSize = 16
+let ringType = Neopixel:GRB + Neopixel:KHZ800
+let ringStrip = Neopixel:make(ringSize, ringPin, ringType)
+
+type ringMode = red | green | blue | black
+let mode = ref red()
+
+fun modeToColor(m) =
+    case m of
+    | red() => Neopixel:makeColor(255, 0, 0)
+    | green() => Neopixel:makeColor(0, 255, 0)
+    | blue() => Neopixel:makeColor(0, 0, 255)
+    | black() => Neopixel:makeColor(0, 0, 0)
+    end
+
+fun round32(val : double) : int32 = (
+    let mutable ret = 0i32;
+    #ret = (int32_t)(val + 0.5);#;
+    ret
+)
+
+fun calcAccAngle() : int32 = (
+    let (accXYZ, magXYZ) = !(!amState).latchState;
+    let accX = Vector:get<double;3>(0, accXYZ);
+    let accY = Vector:get<double;3>(1, accXYZ);
+    let r = sqrt_(accX * accX + accY * accY);
+    (round32(radToDeg(atan2_(accY / r, accX / r))) + 180) mod 360
+)
+
+fun displayAccAngle() : unit = (
+    let idx = ((-calcAccAngle() + 270 + 360) mod 360) * 2 / 45;
+    #Serial.println(idx);#;
+    for i in 0 to ringSize - 1 do
+        if i == idx then
+            Neopixel:setPixelColor(i, modeToColor(green()), ringStrip)
+        else
+            Neopixel:setPixelColor(i, modeToColor(black()), ringStrip)
+        end
+    end;
+    Neopixel:show(ringStrip)
+)
+
+fun setup() = (
+    SparkFunLSM303C:begin(am);
+    Neopixel:begin(ringStrip)
+)
+
+fun main() = (
+    setup();
+    while true do (
+        let amSig = SparkFunLSM303C:getSignal(40, am, amState);
+        Signal:sink(
+            fn (amxyz) -> (
+                displayAccAngle()
+            ) end,
+            amSig
+        )
+    ) end
+)
+
