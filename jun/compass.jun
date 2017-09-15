@@ -47,7 +47,7 @@ fun calcAccAngle(amXYZ : (vector<double;3>*vector<double;3>)) : angleType = (
 fun calcNeoidx(ang : angleType) : neoidxType = (
     case ang of
     | level() => neoall()
-    | degree(deg) => neoidx(((-deg + 270 + 360) mod 360) * 2 / 45)
+    | degree(deg) => neoidx(((-deg + 285 + 360) mod 360) * 2 / 45)
     end
 )
 
